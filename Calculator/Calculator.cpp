@@ -33,3 +33,16 @@ int main()
 
 	error("Bad expression!");
 }
+
+/* My first user defined type to fix a deficiency in the standard libraries! Yay! Holds a token. Token is an example of a C++ user-defined type. */
+//TO DO - Study and understand https://en.cppreference.com/w/cpp/language/constructor
+class Token
+{
+public:
+	char kind;
+	double value;
+
+	//constructor
+	Token(char k) :kind{ k }, value{ 0.0 } {}
+	Token(char k, double v) :kind{ k }, value{ v } {}
+};
