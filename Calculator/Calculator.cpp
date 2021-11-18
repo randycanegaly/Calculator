@@ -2,18 +2,34 @@
 
 int main()
 {
-	cout << "Please enter expression (can handle + and -):";
+	cout << "Please enter expression (can handle +, -, * and /):\n";
+	cout << "add an x to end expression (e.g., 1+2*3x): "; //hacky marker for end of expression
 	int lval = 0;
 	int rval;
-	char op;
-	int res = 0;//did this to stop compiler warning about uninitialized variable
-	cin >> lval >> op >> rval; //reads in something like 1 + 3
+	cin >> lval;
+	if (!cin) error("Missing first operand!");
+	for (char op; cin >> op;) {//TO DO - review for loop forms. I think this is "for each op that gets extracted from the input stream ....
+		if (op != 'x') cin >> rval;//not the end of the expression, so keep reading
+		if (!cin) error("There is not a second operand.");
+		switch (op) {
+		case '+':
+			lval += rval;
+			break;
+		case '-':
+			lval -= rval;
+			break;
+		case '*':
+			lval *= rval;
+			break;
+		case '/':
+			lval /= rval;
+			break;
+		default:
+			cout << "Result: " << lval << '\n';
+			keep_window_open();
+			return 0;
+		}
+	}
 
-	if (op == '+')
-		res = lval + rval;
-	else if (op == '-')
-		res = lval - rval;
-
-	cout << "The result is: " << res << endl;
-	return 0; //TO DO why? what does this do?
+	error("Bad expression!");
 }
