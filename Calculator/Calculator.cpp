@@ -68,9 +68,30 @@ Number:
 		  floating-point-literal
 */
 
-Token get_token()
+/*I got this code from https://stroustrup.com/Programming/calculator00.cpp */
+Token get_token()    // read a token from cin
 {
-	return Token{ '+' };
+	char ch;
+	cin >> ch;    // note that >> skips whitespace (space, newline, tab, etc.) It extracts the next charactor from input and assigns it to ch
+
+	switch (ch) {
+		//not yet   case ';':    // for "print"
+		//not yet   case 'q':    // for "quit"
+	case '(': case ')': case '+': case '-': case '*': case '/':
+		return Token(ch);        // let each character represent itself, not a number so k.value uses default 0.0
+	case '.': //do nothing
+	case '0': case '1': case '2': case '3': case '4':
+	case '5': case '6': case '7': case '8': case '9'://see a digit
+	{
+		cin.putback(ch);         // put digit back into the input stream. Skipping until see a whole floating-point number?
+		double val;
+		cin >> val;              // read a floating-point number
+		return Token('8', val);   // let '8' represent "a number"
+	}
+	default:
+		error("Bad token");
+		return Token('Z');//TO DO Take this out! It's a hack to get this to compile. Why does Stroustrup's code at the URL above not build?
+	}
 }
 
 double primary()
