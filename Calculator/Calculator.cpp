@@ -46,3 +46,92 @@ public:
 	Token(char k) :kind{ k }, value{ 0.0 } {}
 	Token(char k, double v) :kind{ k }, value{ v } {}
 };
+
+/*Writing functions to implement a grammar*/
+
+/*
+The Grammar ........
+
+Expression:
+		  Term
+		  Expression "+" Term         // addition
+		  Expression "–" Term         // subtraction
+Term:
+		  Primary
+		  Term "*" Primary             // multiplication
+		  Term "/" Primary              // division
+		  Term "%" Primary               // remainder (modulo)
+Primary:
+		  Number
+		   "(" Expression ")"             // grouping
+Number:
+		  floating-point-literal
+*/
+
+Token get_token()
+{
+	return Token{ '+' };
+}
+
+double primary()
+{
+	return 1;
+}
+
+double term()
+{
+	double left = primary();
+	Token t = get_token();
+
+	while (true)
+	{
+		switch (t.kind)
+		{
+		case '*':
+			left *= term();
+			t = get_token();
+			break;
+		case '/':
+		{
+			double d = primary();
+			if (d == 0) error("divide by zero");
+			left /= d;
+			t = get_token();
+			break;
+		}
+
+		default:
+			return left;
+		}
+	}	
+}
+
+double expression() 
+{
+	double left = term(); //An expression can be just a term, so look for one and get its value
+	//this avoids expression calling expression and creating an infinite loop
+	Token t = get_token();//get the next token, an operator?
+	
+	while (true)
+	{
+		switch (t.kind)
+		{
+		case '+':
+			left += term();
+			t = get_token();
+			break;
+		case '-':
+			left -= term();
+			t = get_token();
+			break;
+
+		default:
+			return left;
+		}	
+		
+	}	
+}
+
+
+
+
