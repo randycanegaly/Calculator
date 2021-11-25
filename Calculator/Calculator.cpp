@@ -1,39 +1,5 @@
 #include "../../std_lib_facilities.h"
 
-int main()
-{
-	cout << "Please enter expression (can handle +, -, * and /):\n";
-	cout << "add an x to end expression (e.g., 1+2*3x): "; //hacky marker for end of expression
-	int lval = 0;
-	int rval;
-	cin >> lval;
-	if (!cin) error("Missing first operand!");
-	for (char op; cin >> op;) {//TO DO - review for loop forms. I think this is "for each op that gets extracted from the input stream ....
-		if (op != 'x') cin >> rval;//not the end of the expression, so keep reading
-		if (!cin) error("There is not a second operand.");
-		switch (op) {
-		case '+':
-			lval += rval;
-			break;
-		case '-':
-			lval -= rval;
-			break;
-		case '*':
-			lval *= rval;
-			break;
-		case '/':
-			lval /= rval;
-			break;
-		default:
-			cout << "Result: " << lval << '\n';
-			keep_window_open();
-			return 0;
-		}
-	}
-
-	error("Bad expression!");
-}
-
 /* My first user defined type to fix a deficiency in the standard libraries! Yay! Holds a token. Token is an example of a C++ user-defined type. */
 //TO DO - Study and understand https://en.cppreference.com/w/cpp/language/constructor
 class Token
@@ -45,28 +11,7 @@ public:
 	//constructor
 	Token(char k) :kind{ k }, value{ 0.0 } {}
 	Token(char k, double v) :kind{ k }, value{ v } {}
-};
-
-/*Writing functions to implement a grammar*/
-
-/*
-The Grammar ........
-
-Expression:
-		  Term
-		  Expression "+" Term         // addition
-		  Expression "–" Term         // subtraction
-Term:
-		  Primary
-		  Term "*" Primary             // multiplication
-		  Term "/" Primary              // division
-		  Term "%" Primary               // remainder (modulo)
-Primary:
-		  Number
-		   "(" Expression ")"             // grouping
-Number:
-		  floating-point-literal
-*/
+}; 
 
 /*I got this code from https://stroustrup.com/Programming/calculator00.cpp */
 Token get_token()    // read a token from cin
@@ -94,9 +39,136 @@ Token get_token()    // read a token from cin
 	}
 }
 
+class Token_stream {
+public:
+	Token get();            // get a Token
+	void putback(Token t);  // put a Token back
+private:
+	bool full{ false };      // is there a Token in the buffer?
+	Token buffer = { '0' };           // where we store a 'putback' Token
+};
+
+void Token_stream::putback(Token t)
+{
+	if (full) error("putback() into a full buffer");
+	buffer = t;         // copy t to buffer
+	full = true;        // buffer is now full
+}
+
+Token Token_stream::get()
+{
+	if (full) {
+		full = false;
+		return buffer;
+	}
+	char ch;
+	cin >> ch;
+
+	switch (ch) {
+	case ';':       // for "print"
+	case 'q':       // for "quit"
+	case '(':
+	case ')':
+	case '+':
+	case '-':
+	case '*':
+	case '/':
+		return Token{ ch };   // let each character represent itself
+	case '.':
+	case '0':
+	case '1':
+	case '2':
+	case '3':
+	case '4':
+	case '5':
+	case '6':
+	case '7':
+	case '8':
+	case '9':
+	{
+		cin.putback(ch);
+		double val;
+		cin >> val;
+		return Token{ '8', val };
+	}
+	default:
+		error("Bad Token");
+	}
+}
+
+Token_stream ts; //provides get() and putback()
+
+double expression();
+
+double term();
+
+int main()
+{
+	try {
+		while (cin)
+			cout << "=" << expression() << '\n';
+		keep_window_open();
+	}
+	catch (exception& e) {
+		cerr << e.what() << '\n';
+		keep_window_open();
+		return 1;//error return value
+	}
+	catch (...) {
+		cerr << "exception \n";
+		keep_window_open();
+		return 2;//error return value
+	}
+}
+
+
+
+/*Writing functions to implement a grammar*/
+
+/*
+The Grammar ........
+
+Expression:
+		  Term
+		  Expression "+" Term         // addition
+		  Expression "–" Term         // subtraction
+Term:
+		  Primary
+		  Term "*" Primary             // multiplication
+		  Term "/" Primary              // division
+		  Term "%" Primary               // remainder (modulo)
+Primary:
+		  Number
+		   "(" Expression ")"             // grouping
+Number:
+		  floating-point-literal
+*/
+
+
+
+/*Primary:
+Number
+"(" Expression ")"             // grouping
+*/
+
 double primary()
 {
-	return 1;
+	Token t = get_token();
+	switch (t.kind)
+	{
+	case'(':  //handle "(" Expression ")"
+		{	double d = expression();
+		t = ts.get();// get_token();
+		if (t.kind != ')') error("')' expected");
+		return d;
+		}
+
+	case '8':
+		return t.value;
+
+	default:
+		error("primary expected");
+	}
 }
 
 double term()
@@ -110,18 +182,19 @@ double term()
 		{
 		case '*':
 			left *= term();
-			t = get_token();
+			t = ts.get();// get_token();
 			break;
 		case '/':
 		{
 			double d = primary();
 			if (d == 0) error("divide by zero");
 			left /= d;
-			t = get_token();
+			t = ts.get();// get_token();
 			break;
 		}
 
 		default:
+			ts.putback(t); 
 			return left;
 		}
 	}	
@@ -131,7 +204,7 @@ double expression()
 {
 	double left = term(); //An expression can be just a term, so look for one and get its value
 	//this avoids expression calling expression and creating an infinite loop
-	Token t = get_token();//get the next token, an operator?
+	Token t = ts.get(); // get_token();//get the next token, an operator?
 	
 	while (true)
 	{
@@ -139,14 +212,15 @@ double expression()
 		{
 		case '+':
 			left += term();
-			t = get_token();
+			t = ts.get();// get_token();
 			break;
 		case '-':
 			left -= term();
-			t = get_token();
+			t = ts.get();// get_token();
 			break;
 
 		default:
+			ts.putback(t);
 			return left;
 		}	
 		
