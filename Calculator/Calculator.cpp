@@ -57,12 +57,12 @@ void Token_stream::putback(Token t)
 
 Token Token_stream::get()
 {
-	if (full) {
+	if (full) {//only go get more characters to build a token if the buffer is not already full. If full just return the current buffer (Token)
 		full = false;
 		return buffer;
 	}
 	char ch;
-	cin >> ch;
+	cin >> ch;//get a character
 
 	switch (ch) {
 	case ';':       // for "print"
@@ -86,7 +86,7 @@ Token Token_stream::get()
 	case '8':
 	case '9':
 	{
-		cin.putback(ch);
+		cin.putback(ch); //we are seeing digits. put them back, look for the whole thing. A double.
 		double val;
 		cin >> val;
 		return Token{ '8', val };
@@ -105,9 +105,18 @@ double term();
 int main()
 {
 	try {
-		while (cin)
-			cout << "=" << expression() << '\n';
-		keep_window_open();
+		double val = 0;
+		while (cin) {
+			Token t = ts.get();
+
+			if (t.kind == 'q') break;
+			if (t.kind == ';')
+				cout << "=" << val << '\n';
+			else
+				ts.putback(t);
+
+			val = expression();
+		}
 	}
 	catch (exception& e) {
 		cerr << e.what() << '\n';
@@ -119,6 +128,7 @@ int main()
 		keep_window_open();
 		return 2;//error return value
 	}
+	
 }
 
 
@@ -153,7 +163,7 @@ Number
 
 double primary()
 {
-	Token t = get_token();
+	Token t = ts.get();// get_token();
 	switch (t.kind)
 	{
 	case'(':  //handle "(" Expression ")"
@@ -166,6 +176,10 @@ double primary()
 	case '8':
 		return t.value;
 
+	case 'q':
+		ts.putback(t);
+		break;
+
 	default:
 		error("primary expected");
 	}
@@ -174,7 +188,7 @@ double primary()
 double term()
 {
 	double left = primary();
-	Token t = get_token();
+	Token t = ts.get();// get_token();
 
 	while (true)
 	{
